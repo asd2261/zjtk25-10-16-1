@@ -51,18 +51,16 @@
             overflow: hidden;
             transition: all 0.3s ease;
             opacity: 0.3;
-            transform: translateX(250px);
+            transform: translateX(0);
         `;
 
         // 添加鼠标悬停事件
         floatDiv.addEventListener('mouseenter', function() {
             this.style.opacity = '1';
-            this.style.transform = 'translateX(0)';
         });
 
         floatDiv.addEventListener('mouseleave', function() {
             this.style.opacity = '0.3';
-            this.style.transform = 'translateX(250px)';
         });
 
         // 创建标题栏
@@ -123,9 +121,6 @@
             isEssayMode = false;
             updateUIForMode();
         };
-
-        // 默认选择判断按钮
-        choiceButton.click();
 
         // 创建简答题模式按钮
         const essayButton = document.createElement('button');
@@ -639,14 +634,13 @@
         // 更新状态信息
         document.getElementById('statusInfo').textContent = `找到简答题：${totalEssayQuestions} 道`;
 
-        // 启用/禁用导航按钮
-        updateNavigationButtons();
-
         // 显示第一道简答题
         if (totalEssayQuestions > 0) {
             showEssayQuestion(0);
         } else {
             document.getElementById('currentQuestionInfo').innerHTML = '未找到简答题！';
+            // 更新导航按钮状态
+            updateNavigationButtons();
         }
     }
 
@@ -655,7 +649,7 @@
         if (index < 0 || index >= totalEssayQuestions) return;
 
         const row = currentEssayQuestions[index];
-        
+
         // 获取题目文本
         const questionDiv = row.querySelector('div[name^="DIV"]');
         if (!questionDiv) return;
@@ -700,17 +694,43 @@
 
         if (!found) {
             correctAnswer = '未找到匹配答案';
-        } else {
-            // 自动复制答案到剪切板
-            copyToClipboard(correctAnswer);
         }
 
         // 更新当前题目信息
         document.getElementById('currentQuestionInfo').innerHTML =
-            `当前题目 (${index + 1}/${totalEssayQuestions})：${shortQuestion}<br>答案：${correctAnswer}<br><span style="color: #4CAF50; font-size: 12px;">${found ? '✓ 答案已复制到剪切板' : ''}</span>`;
+            `当前题目 (${index + 1}/${totalEssayQuestions})：${shortQuestion}<br>答案：${correctAnswer}`;
+
+        // 自动复制答案到剪切板
+        if (found) {
+            copyToClipboard(correctAnswer);
+            // 提示用户答案已复制
+            const originalHTML = document.getElementById('currentQuestionInfo').innerHTML;
+            document.getElementById('currentQuestionInfo').innerHTML =
+                `当前题目 (${index + 1}/${totalEssayQuestions})：${shortQuestion}<br>答案：${correctAnswer}<br><span style="color: #4CAF50; font-size: 12px;">✓ 答案已自动复制到剪切板</span>`;
+            setTimeout(() => {
+                document.getElementById('currentQuestionInfo').innerHTML = originalHTML;
+            }, 1000);
+        }
 
         // 更新导航按钮状态
         updateNavigationButtons();
+
+        // 为textarea添加点击事件，实现点击自动复制答案
+        const textarea = row.querySelector('textarea[name^="TLX"]');
+        if (textarea) {
+            textarea.onclick = function() {
+                if (found) {
+                    copyToClipboard(correctAnswer);
+                    // 提示用户答案已复制
+                    const originalHTML = document.getElementById('currentQuestionInfo').innerHTML;
+                    document.getElementById('currentQuestionInfo').innerHTML =
+                        `当前题目 (${index + 1}/${totalEssayQuestions})：${shortQuestion}<br>答案：${correctAnswer}<br><span style="color: #4CAF50; font-size: 12px;">✓ 答案已复制到剪切板</span>`;
+                    setTimeout(() => {
+                        document.getElementById('currentQuestionInfo').innerHTML = originalHTML;
+                    }, 1000);
+                }
+            };
+        }
     }
 
     // 显示上一道简答题 (简答题模式)
@@ -883,6 +903,13 @@
                 createFloatingWindow();
                 // 初始化鼠标活动监听
                 initMouseActivityMonitor();
+                // 默认选择判断按钮
+                setTimeout(() => {
+                    const choiceButton = document.getElementById('choiceButton');
+                    if (choiceButton) {
+                        choiceButton.click();
+                    }
+                }, 100);
             }, getRandomDelay(500, 1500));
         }
     });
